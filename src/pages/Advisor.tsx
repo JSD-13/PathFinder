@@ -1,12 +1,16 @@
 import { useState, useRef, useEffect } from "react";
 import { Send, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import ReactMarkdown from "react-markdown";
 import PageHeader from "@/components/PageHeader";
+import { toast } from "@/hooks/use-toast";
 
 interface Message {
   role: "user" | "assistant";
   content: string;
 }
+
+const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-advisor`;
 
 const quickPrompts = [
   "I want to be an engineer",
@@ -14,6 +18,93 @@ const quickPrompts = [
   "I want to study business",
   "What are the easiest electives?",
 ];
+
+async function streamChat({
+  messages,
+  onDelta,
+  onDone,
+  onError,
+}: {
+  messages: Message[];
+  onDelta: (text: string) => void;
+  onDone: () => void;
+  onError: (msg: string) => void;
+}) {
+  const resp = await fetch(CHAT_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+    },
+    body: JSON.stringify({ messages }),
+  });
+
+  if (!resp.ok) {
+    const data = await resp.json().catch(() => ({}));
+    onError(data.error || `Error ${resp.status}`);
+    return;
+  }
+
+  if (!resp.body) {
+    onError("No response body");
+    return;
+  }
+
+  const reader = resp.body.getReader();
+  const decoder = new TextDecoder();
+  let textBuffer = "";
+  let streamDone = false;
+
+  while (!streamDone) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    textBuffer += decoder.decode(value, { stream: true });
+
+    let newlineIndex: number;
+    while ((newlineIndex = textBuffer.indexOf("\n")) !== -1) {
+      let line = textBuffer.slice(0, newlineIndex);
+      textBuffer = textBuffer.slice(newlineIndex + 1);
+
+      if (line.endsWith("\r")) line = line.slice(0, -1);
+      if (line.startsWith(":") || line.trim() === "") continue;
+      if (!line.startsWith("data: ")) continue;
+
+      const jsonStr = line.slice(6).trim();
+      if (jsonStr === "[DONE]") {
+        streamDone = true;
+        break;
+      }
+
+      try {
+        const parsed = JSON.parse(jsonStr);
+        const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+        if (content) onDelta(content);
+      } catch {
+        textBuffer = line + "\n" + textBuffer;
+        break;
+      }
+    }
+  }
+
+  // Final flush
+  if (textBuffer.trim()) {
+    for (let raw of textBuffer.split("\n")) {
+      if (!raw) continue;
+      if (raw.endsWith("\r")) raw = raw.slice(0, -1);
+      if (raw.startsWith(":") || raw.trim() === "") continue;
+      if (!raw.startsWith("data: ")) continue;
+      const jsonStr = raw.slice(6).trim();
+      if (jsonStr === "[DONE]") continue;
+      try {
+        const parsed = JSON.parse(jsonStr);
+        const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+        if (content) onDelta(content);
+      } catch { /* ignore */ }
+    }
+  }
+
+  onDone();
+}
 
 const Advisor = () => {
   const [messages, setMessages] = useState<Message[]>([
@@ -32,19 +123,43 @@ const Advisor = () => {
 
   const handleSend = async (text?: string) => {
     const msg = text || input;
-    if (!msg.trim()) return;
+    if (!msg.trim() || isLoading) return;
 
     const userMsg: Message = { role: "user", content: msg };
-    setMessages((prev) => [...prev, userMsg]);
+    const updatedMessages = [...messages, userMsg];
+    setMessages(updatedMessages);
     setInput("");
     setIsLoading(true);
 
-    // Simulated response for now — will connect to AI backend
-    setTimeout(() => {
-      const response = getSimulatedResponse(msg);
-      setMessages((prev) => [...prev, { role: "assistant", content: response }]);
+    let assistantSoFar = "";
+    const upsertAssistant = (chunk: string) => {
+      assistantSoFar += chunk;
+      setMessages((prev) => {
+        const last = prev[prev.length - 1];
+        if (last?.role === "assistant" && prev.length > 1 && prev[prev.length - 2]?.role === "user" && prev[prev.length - 2]?.content === msg) {
+          return prev.map((m, i) => (i === prev.length - 1 ? { ...m, content: assistantSoFar } : m));
+        }
+        return [...prev, { role: "assistant", content: assistantSoFar }];
+      });
+    };
+
+    try {
+      // Send only user/assistant messages (skip the initial greeting for context)
+      const apiMessages = updatedMessages.slice(1);
+      await streamChat({
+        messages: apiMessages,
+        onDelta: (chunk) => upsertAssistant(chunk),
+        onDone: () => setIsLoading(false),
+        onError: (errMsg) => {
+          toast({ title: "AI Error", description: errMsg, variant: "destructive" });
+          setIsLoading(false);
+        },
+      });
+    } catch (e) {
+      console.error(e);
+      toast({ title: "Connection Error", description: "Could not reach the AI advisor. Please try again.", variant: "destructive" });
       setIsLoading(false);
-    }, 1200);
+    }
   };
 
   return (
@@ -67,13 +182,19 @@ const Advisor = () => {
                     : "bg-card shadow-card text-card-foreground rounded-bl-md"
                 }`}
               >
-                {msg.content}
+                {msg.role === "assistant" ? (
+                  <div className="prose prose-sm max-w-none [&_p]:my-1 [&_ul]:my-1 [&_li]:my-0.5 [&_strong]:text-foreground text-card-foreground">
+                    <ReactMarkdown>{msg.content}</ReactMarkdown>
+                  </div>
+                ) : (
+                  msg.content
+                )}
               </div>
             </motion.div>
           ))}
         </AnimatePresence>
 
-        {isLoading && (
+        {isLoading && messages[messages.length - 1]?.role !== "assistant" && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-start">
             <div className="bg-card shadow-card rounded-2xl rounded-bl-md px-4 py-3 flex gap-1">
               <span className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: "0ms" }} />
@@ -121,19 +242,5 @@ const Advisor = () => {
     </div>
   );
 };
-
-function getSimulatedResponse(input: string): string {
-  const lower = input.toLowerCase();
-  if (lower.includes("engineer")) {
-    return "Great choice! 🛠️ For engineering, you'll want:\n\n• **Physics** (essential)\n• **Mathematics Extended (M2)** (highly recommended)\n• **Chemistry** (useful for chemical/materials eng.)\n• **ICT** (for computer/software eng.)\n\nMost HK universities require Physics + M1/M2 for engineering programs. Shall I explain any of these subjects in more detail?";
-  }
-  if (lower.includes("nurse") || lower.includes("nursing")) {
-    return "Wonderful! 🏥 For nursing, consider:\n\n• **Biology** (essential)\n• **Chemistry** (recommended)\n• **Health Management & Social Care** (helpful)\n• **Mathematics** (standard level is fine)\n\nHKU and PolyU both offer nursing programs. Would you like to know the entry requirements?";
-  }
-  if (lower.includes("business")) {
-    return "Smart thinking! 💼 For business studies:\n\n• **BAFS (Business, Accounting & Financial Studies)**\n• **Economics**\n• **Mathematics Extended (M1)** (for finance)\n• **ICT** (for digital business)\n\nWould you like to know about specific universities?";
-  }
-  return "That's an interesting goal! Could you tell me more specifically what career you're interested in? For example: doctor, engineer, designer, teacher, social worker, etc. The more specific, the better I can help! 🎯";
-}
 
 export default Advisor;
