@@ -7,6 +7,7 @@ import BottomNav from "@/components/BottomNav";
 import Index from "./pages/Index";
 import Advisor from "./pages/Advisor";
 import Studies from "./pages/Studies";
+import Subject from "./pages/Subject";
 import Wellbeing from "./pages/Wellbeing";
 import Journal from "./pages/Journal";
 import Events from "./pages/Events";
@@ -25,6 +26,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/advisor" element={<Advisor />} />
           <Route path="/studies" element={<Studies />} />
+          <Route path="/studies/:slug" element={<Subject />} />
           <Route path="/wellbeing" element={<Wellbeing />} />
           <Route path="/journal" element={<Journal />} />
           <Route path="/events" element={<Events />} />
