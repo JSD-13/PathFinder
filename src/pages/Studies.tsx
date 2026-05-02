@@ -1,32 +1,37 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
 import { BookOpen, Search, Globe } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
+import { SUBJECTS, LANGUAGES, type LangCode } from "@/data/syllabus";
 
-const subjects = [
-  { name: "Physics", category: "Science", emoji: "⚡", concepts: 42 },
-  { name: "Chemistry", category: "Science", emoji: "🧪", concepts: 38 },
-  { name: "Biology", category: "Science", emoji: "🧬", concepts: 45 },
-  { name: "Mathematics (Core)", category: "Mathematics", emoji: "📐", concepts: 50 },
-  { name: "Mathematics (M1)", category: "Mathematics", emoji: "📊", concepts: 30 },
-  { name: "Mathematics (M2)", category: "Mathematics", emoji: "∑", concepts: 35 },
-  { name: "Economics", category: "Humanities", emoji: "💰", concepts: 28 },
-  { name: "BAFS", category: "Humanities", emoji: "💼", concepts: 32 },
-  { name: "Geography", category: "Humanities", emoji: "🌍", concepts: 26 },
-  { name: "History", category: "Humanities", emoji: "📜", concepts: 24 },
-  { name: "ICT", category: "Technology", emoji: "💻", concepts: 36 },
-  { name: "English Language", category: "Core", emoji: "🇬🇧", concepts: 20 },
+// Extra subjects without detail pages yet — shown as "coming soon".
+const extraSubjects = [
+  { slug: "mathematics-m1", name: "Mathematics (M1)", category: "Mathematics", emoji: "📊", concepts: 30 },
+  { slug: "mathematics-m2", name: "Mathematics (M2)", category: "Mathematics", emoji: "∑", concepts: 35 },
+  { slug: "bafs", name: "BAFS", category: "Humanities", emoji: "💼", concepts: 32 },
+  { slug: "geography", name: "Geography", category: "Humanities", emoji: "🌍", concepts: 26 },
+  { slug: "history", name: "History", category: "Humanities", emoji: "📜", concepts: 24 },
+  { slug: "english", name: "English Language", category: "Core", emoji: "🇬🇧", concepts: 20 },
 ];
-
-const languages = ["English", "اردو", "हिन्दी", "नेपाली", "Tagalog"];
 
 const Studies = () => {
   const [search, setSearch] = useState("");
-  const [selectedLang, setSelectedLang] = useState("English");
+  const [selectedLang, setSelectedLang] = useState<LangCode>("en");
 
-  const filtered = subjects.filter((s) =>
-    s.name.toLowerCase().includes(search.toLowerCase())
-  );
+  const available = SUBJECTS.map((s) => ({
+    slug: s.slug,
+    name: s.name,
+    category: s.category,
+    emoji: s.emoji,
+    concepts: s.concepts.length,
+    available: true,
+  }));
+  const all = [
+    ...available,
+    ...extraSubjects.map((s) => ({ ...s, available: false })),
+  ];
+  const filtered = all.filter((s) => s.name.toLowerCase().includes(search.toLowerCase()));
 
   return (
     <div className="min-h-screen pb-24">
@@ -35,23 +40,22 @@ const Studies = () => {
       <div className="px-4 max-w-lg mx-auto">
         {/* Language selector */}
         <div className="flex gap-2 overflow-x-auto pb-2 mb-4 scrollbar-hide">
-          {languages.map((lang) => (
+          {LANGUAGES.map((lang) => (
             <button
-              key={lang}
-              onClick={() => setSelectedLang(lang)}
+              key={lang.code}
+              onClick={() => setSelectedLang(lang.code)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all ${
-                selectedLang === lang
+                selectedLang === lang.code
                   ? "gradient-secondary text-secondary-foreground shadow-soft"
                   : "bg-muted text-muted-foreground hover:bg-muted/80"
               }`}
             >
               <Globe className="w-3 h-3" />
-              {lang}
+              {lang.label}
             </button>
           ))}
         </div>
 
-        {/* Search */}
         <div className="relative mb-4">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
@@ -62,25 +66,39 @@ const Studies = () => {
           />
         </div>
 
-        {/* Subject grid */}
         <div className="grid grid-cols-2 gap-3">
-          {filtered.map((subject, i) => (
-            <motion.button
-              key={subject.name}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05 }}
-              className="bg-card rounded-2xl p-4 shadow-card hover:shadow-elevated transition-all hover:-translate-y-0.5 text-left"
-            >
-              <span className="text-2xl mb-2 block">{subject.emoji}</span>
-              <h3 className="font-heading font-semibold text-sm text-foreground mb-0.5">{subject.name}</h3>
-              <p className="text-xs text-muted-foreground">{subject.concepts} key concepts</p>
-              <div className="mt-2 flex items-center gap-1 text-primary">
-                <BookOpen className="w-3 h-3" />
-                <span className="text-[10px] font-medium">Start learning</span>
-              </div>
-            </motion.button>
-          ))}
+          {filtered.map((subject, i) => {
+            const inner = (
+              <>
+                <span className="text-2xl mb-2 block">{subject.emoji}</span>
+                <h3 className="font-heading font-semibold text-sm text-foreground mb-0.5">{subject.name}</h3>
+                <p className="text-xs text-muted-foreground">
+                  {subject.available ? `${subject.concepts} key concepts` : "Coming soon"}
+                </p>
+                <div className={`mt-2 flex items-center gap-1 ${subject.available ? "text-primary" : "text-muted-foreground"}`}>
+                  <BookOpen className="w-3 h-3" />
+                  <span className="text-[10px] font-medium">{subject.available ? "Start learning" : "In development"}</span>
+                </div>
+              </>
+            );
+            const className = `bg-card rounded-2xl p-4 shadow-card transition-all text-left ${
+              subject.available ? "hover:shadow-elevated hover:-translate-y-0.5" : "opacity-60"
+            }`;
+            return (
+              <motion.div
+                key={subject.slug}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.04 }}
+              >
+                {subject.available ? (
+                  <Link to={`/studies/${subject.slug}`} className={`${className} block`}>{inner}</Link>
+                ) : (
+                  <div className={className}>{inner}</div>
+                )}
+              </motion.div>
+            );
+          })}
         </div>
       </div>
     </div>
