@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { PenLine, Sparkles, Calendar, ChevronRight } from "lucide-react";
+import { PenLine, Sparkles, Calendar } from "lucide-react";
+import ReactMarkdown from "react-markdown";
 import PageHeader from "@/components/PageHeader";
+import { toast } from "@/hooks/use-toast";
 
 const prompts = [
   "What made you smile today? 😊",
@@ -15,13 +17,93 @@ interface JournalEntry {
   text: string;
   date: string;
   aiResponse?: string;
+  aiStreaming?: boolean;
 }
+
+const COMPANION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-companion`;
 
 const Journal = () => {
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [currentText, setCurrentText] = useState("");
   const [showPrompt, setShowPrompt] = useState(true);
-  const [aiThinking, setAiThinking] = useState(false);
+
+  const streamCompanion = async (entryId: number, text: string) => {
+    try {
+      const resp = await fetch(COMPANION_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({ entry: text }),
+      });
+
+      if (!resp.ok) {
+        const data = await resp.json().catch(() => ({}));
+        toast({
+          title: "AI Companion unavailable",
+          description: data.error || `Error ${resp.status}`,
+          variant: "destructive",
+        });
+        setEntries((prev) =>
+          prev.map((e) => (e.id === entryId ? { ...e, aiStreaming: false } : e))
+        );
+        return;
+      }
+      if (!resp.body) return;
+
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let textBuffer = "";
+      let aiSoFar = "";
+      let streamDone = false;
+
+      const append = (chunk: string) => {
+        aiSoFar += chunk;
+        setEntries((prev) =>
+          prev.map((e) => (e.id === entryId ? { ...e, aiResponse: aiSoFar } : e))
+        );
+      };
+
+      while (!streamDone) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        textBuffer += decoder.decode(value, { stream: true });
+
+        let newlineIndex: number;
+        while ((newlineIndex = textBuffer.indexOf("\n")) !== -1) {
+          let line = textBuffer.slice(0, newlineIndex);
+          textBuffer = textBuffer.slice(newlineIndex + 1);
+          if (line.endsWith("\r")) line = line.slice(0, -1);
+          if (line.startsWith(":") || line.trim() === "") continue;
+          if (!line.startsWith("data: ")) continue;
+          const jsonStr = line.slice(6).trim();
+          if (jsonStr === "[DONE]") {
+            streamDone = true;
+            break;
+          }
+          try {
+            const parsed = JSON.parse(jsonStr);
+            const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+            if (content) append(content);
+          } catch {
+            textBuffer = line + "\n" + textBuffer;
+            break;
+          }
+        }
+      }
+
+      setEntries((prev) =>
+        prev.map((e) => (e.id === entryId ? { ...e, aiStreaming: false } : e))
+      );
+    } catch (e) {
+      console.error(e);
+      toast({ title: "Connection error", description: "Could not reach companion.", variant: "destructive" });
+      setEntries((prev) =>
+        prev.map((e) => (e.id === entryId ? { ...e, aiStreaming: false } : e))
+      );
+    }
+  };
 
   const handleSubmit = () => {
     if (!currentText.trim()) return;
@@ -29,26 +111,14 @@ const Journal = () => {
       id: Date.now(),
       text: currentText,
       date: new Date().toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }),
+      aiStreaming: true,
+      aiResponse: "",
     };
     setEntries((prev) => [entry, ...prev]);
+    const textCopy = currentText;
     setCurrentText("");
     setShowPrompt(false);
-
-    // Simulate AI response
-    setAiThinking(true);
-    setTimeout(() => {
-      setEntries((prev) =>
-        prev.map((e) =>
-          e.id === entry.id
-            ? {
-                ...e,
-                aiResponse: "Thank you for sharing that. 💛 Remember, it's okay to feel this way. Would you like to try a quick breathing exercise? Inhale for 4 counts, hold for 4, exhale for 4.",
-              }
-            : e
-        )
-      );
-      setAiThinking(false);
-    }, 2000);
+    streamCompanion(entry.id, textCopy);
   };
 
   return (
@@ -106,18 +176,6 @@ const Journal = () => {
           </div>
         </motion.div>
 
-        {/* AI thinking indicator */}
-        {aiThinking && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="flex items-center gap-2 mb-4 px-2"
-          >
-            <Sparkles className="w-4 h-4 text-secondary animate-pulse" />
-            <span className="text-xs text-muted-foreground">AI companion is reading...</span>
-          </motion.div>
-        )}
-
         {/* Past entries */}
         <AnimatePresence>
           {entries.map((entry) => (
@@ -131,21 +189,28 @@ const Journal = () => {
                 <Calendar className="w-3 h-3 text-muted-foreground" />
                 <span className="text-[10px] text-muted-foreground">{entry.date}</span>
               </div>
-              <p className="text-sm text-foreground leading-relaxed mb-2">{entry.text}</p>
-              {entry.aiResponse && (
+              <p className="text-sm text-foreground leading-relaxed mb-2 whitespace-pre-wrap">{entry.text}</p>
+
+              {(entry.aiResponse || entry.aiStreaming) && (
                 <div className="bg-warm rounded-xl p-3 mt-2">
                   <div className="flex items-center gap-1.5 mb-1">
-                    <Sparkles className="w-3 h-3 text-secondary" />
+                    <Sparkles className={`w-3 h-3 text-secondary ${entry.aiStreaming ? "animate-pulse" : ""}`} />
                     <span className="text-[10px] font-semibold text-warm-foreground">AI Companion</span>
                   </div>
-                  <p className="text-xs text-warm-foreground leading-relaxed">{entry.aiResponse}</p>
+                  {entry.aiResponse ? (
+                    <div className="prose prose-sm max-w-none text-xs text-warm-foreground leading-relaxed [&_p]:my-1">
+                      <ReactMarkdown>{entry.aiResponse}</ReactMarkdown>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-warm-foreground/70 italic">Reading your entry...</p>
+                  )}
                 </div>
               )}
             </motion.div>
           ))}
         </AnimatePresence>
 
-        {entries.length === 0 && !aiThinking && (
+        {entries.length === 0 && (
           <div className="text-center py-8">
             <p className="text-sm text-muted-foreground">Your journal entries will appear here.</p>
             <p className="text-xs text-muted-foreground mt-1">Everything is private and just for you. 🔒</p>
