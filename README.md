@@ -1,73 +1,45 @@
-# Welcome to your Lovable project
+# PathFinder — Navigate Your Future, Your Way
 
-## Project info
+PathFinder is a student‑focused web app that helps Hong Kong DSE students manage their academics, track their well‑being, and find community support — all in their preferred language.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## 🔍 What PathFinder Does
 
-## How can I edit this code?
+The app is built around two main pillars:
 
-There are several ways of editing your application.
+### 📚 My Studies
+- **AI Subject Advisor** – tell the assistant your dream career and get personalised HKDSE subject recommendations.
+- **Syllabus Hub** – explore subject syllabuses explained in simple English (or your native language), with key concepts broken down clearly.
+- **Past Paper Translator** – instantly translate exam questions and command terms, removing language barriers during revision.
 
-**Use Lovable**
+### 💚 My Wellbeing
+- **Therapist Connector** – discover culturally aware professionals and book a low‑commitment first chat.
+- **Mindful Journal** – write down your thoughts with an optional AI companion that offers gentle, non‑judgmental support.
+- **Community Events** – find social events and meet people who truly understand your journey.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+## 🛠️ Tech Stack
 
-Changes made via Lovable will be committed automatically to this repo.
+The project is built with modern tools to ensure a smooth, responsive, and accessible experience:
 
-**Use your preferred IDE**
+- **Vite** – fast development server and build tool
+- **TypeScript** – type‑safe code
+- **React 18** – component‑based UI
+- **React Router DOM** – client‑side routing
+- **Tailwind CSS + shadcn/ui** – consistent, customisable design
+- **Framer Motion** – smooth animations
+- **TanStack React Query** – efficient data fetching
+- **Supabase** – backend and authentication
+- **Lucide Icons** – clean icon set
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## 🚀 Getting Started
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### Prerequisites
+- [Node.js](https://nodejs.org/) (v18 or later)
+- npm or [bun](https://bun.sh/) (the repo contains a `bun.lockb` file)
 
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+### Clone & Install
+```bash
+git clone https://github.com/JSD-13/PathFinder.git
+cd PathFinder
+npm install
+# or if you use bun:
+bun install
