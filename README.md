@@ -44,6 +44,7 @@ cd PathFinder
 npm install
 # or if you use bun:
 bun install
+```
 Environment Variables
 Create a .env file in the root directory with your Supabase credentials:
 
