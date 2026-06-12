@@ -56,7 +56,7 @@ VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 The app also expects a Supabase Edge Function (ai-advisor) to handle the AI chat features.
 
 ### Run the Development Server
-``` bash
+```bash
 npm run dev
 # or
 bun run dev
