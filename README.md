@@ -36,6 +36,13 @@ The project is built with modern tools to ensure a smooth, responsive, and acces
 - [Node.js](https://nodejs.org/) (v18 or later)
 - npm or [bun](https://bun.sh/) (the repo contains a `bun.lockb` file)
 
+### Clone & Install
+```bash
+git clone https://github.com/JSD-13/PathFinder.git
+cd PathFinder
+npm install
+# or if you use bun:
+bun install
 Environment Variables
 Create a .env file in the root directory with your Supabase credentials:
 
@@ -44,10 +51,48 @@ VITE_SUPABASE_URL=your_supabase_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 The app also expects a Supabase Edge Function (ai-advisor) to handle the AI chat features.
 
-### Clone & Install
-```bash
-git clone https://github.com/JSD-13/PathFinder.git
-cd PathFinder
-npm install
-# or if you use bun:
-bun install
+Run the Development Server
+bash
+npm run dev
+# or
+bun run dev
+Open http://localhost:5173 to view the app.
+
+Build for Production
+bash
+npm run build
+npm run preview   # preview the production build locally
+📦 Project Structure
+text
+src/
+├── pages/           # Main route pages (Index, Advisor, Studies, Journal, etc.)
+├── components/      # Reusable UI components (FeatureCard, PageHeader, BottomNav, etc.)
+├── hooks/           # Custom hooks (use-toast, etc.)
+├── data/            # Static data (subjects, languages, therapists)
+├── assets/          # Images and illustrations
+├── App.tsx          # Main router and providers
+└── main.tsx         # Application entry point
+🤝 Contributing
+Contributions are welcome! Feel free to open an issue or submit a pull request.
+
+Fork the repository.
+
+Create a new branch (git checkout -b feature/your-feature).
+
+Commit your changes (git commit -m 'Add some feature').
+
+Push to the branch (git push origin feature/your-feature).
+
+Open a Pull Request.
+
+🙏 Acknowledgements
+Lovable – initial project scaffolding
+
+shadcn/ui – accessible component library
+
+The open‑source community for all the amazing tools used in this project
+
+📄 License
+This project is licensed under the MIT License. See the LICENSE file for more information.
+
+Made with ❤️ for HKDSE students, by students.
