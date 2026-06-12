@@ -37,6 +37,7 @@ The project is built with modern tools to ensure a smooth, responsive, and acces
 - npm or [bun](https://bun.sh/) (the repo contains a `bun.lockb` file)
 
 ### Clone & Install
+
 ```bash
 git clone https://github.com/JSD-13/PathFinder.git
 cd PathFinder
