@@ -45,27 +45,32 @@ npm install
 # or if you use bun:
 bun install
 ```
-Environment Variables
+
+### Environment Variables
 Create a .env file in the root directory with your Supabase credentials:
 
-text
+```text
 VITE_SUPABASE_URL=your_supabase_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
 The app also expects a Supabase Edge Function (ai-advisor) to handle the AI chat features.
 
-Run the Development Server
-bash
+### Run the Development Server
+``` bash
 npm run dev
 # or
 bun run dev
+```
 Open http://localhost:5173 to view the app.
 
-Build for Production
-bash
+### Build for Production
+```bash
 npm run build
 npm run preview   # preview the production build locally
-📦 Project Structure
-text
+```
+
+## 📦 Project Structure
+```text
 src/
 ├── pages/           # Main route pages (Index, Advisor, Studies, Journal, etc.)
 ├── components/      # Reusable UI components (FeatureCard, PageHeader, BottomNav, etc.)
@@ -74,7 +79,9 @@ src/
 ├── assets/          # Images and illustrations
 ├── App.tsx          # Main router and providers
 └── main.tsx         # Application entry point
-🤝 Contributing
+```
+
+## 🤝 Contributing
 Contributions are welcome! Feel free to open an issue or submit a pull request.
 
 Fork the repository.
@@ -87,14 +94,14 @@ Push to the branch (git push origin feature/your-feature).
 
 Open a Pull Request.
 
-🙏 Acknowledgements
+## 🙏 Acknowledgements
 Lovable – initial project scaffolding
 
 shadcn/ui – accessible component library
 
 The open‑source community for all the amazing tools used in this project
 
-📄 License
+## 📄 License
 This project is licensed under the MIT License. See the LICENSE file for more information.
 
 Made with ❤️ for HKDSE students, by students.
