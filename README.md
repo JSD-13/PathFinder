@@ -36,6 +36,14 @@ The project is built with modern tools to ensure a smooth, responsive, and acces
 - [Node.js](https://nodejs.org/) (v18 or later)
 - npm or [bun](https://bun.sh/) (the repo contains a `bun.lockb` file)
 
+Environment Variables
+Create a .env file in the root directory with your Supabase credentials:
+
+text
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+The app also expects a Supabase Edge Function (ai-advisor) to handle the AI chat features.
+
 ### Clone & Install
 ```bash
 git clone https://github.com/JSD-13/PathFinder.git
